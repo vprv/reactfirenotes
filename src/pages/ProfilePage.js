@@ -1,8 +1,7 @@
-import React, {useContext, useEffect, useState, useCallback} from "react";
+import React, {useEffect, useState, useCallback} from "react";
 
 import Notes from "../components/Notes";
 import Files from "../components/Files";
-import {UserContext} from '../providers/UserProvider';
 import {auth, functions} from "../firebase";
 
 const placeholderImg = 'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcTgT9kbszqM7fbnqU1Mh_klw_4tGznX9KrExN9A_EaOrIVnYBv0&usqp=CAU';
@@ -30,9 +29,8 @@ const ProfilePage = () => {
   const sendFile = async (data) => {
     const sendFile = functions.httpsCallable('sendFile');
     const response = await sendFile(data);
-    console.log(response);
+    console.log(`response from sendFile function ${response}`);
   }
-
 
   const fileOnChangeHandler = (event) => {
     event.preventDefault();
@@ -44,7 +42,6 @@ const ProfilePage = () => {
       sendFile(event.target.result);
     }
   }
-
 
   const getUser = useCallback( async () => {
     const getUser = functions.httpsCallable('getUser');
@@ -119,8 +116,6 @@ const ProfilePage = () => {
           <Notes data={notes}/>
         </div>
       </div>
-
-
       <div style={{display: 'flex'}}>
         <input type="text" placeholder="Заметка..." name="note" value={note} onChange={changeNoteHandler}/>
         <a className="waves-effect waves-light btn" onClick={() => {addNote(note)}}>Отправить</a>
@@ -136,8 +131,6 @@ const ProfilePage = () => {
               <input className="file-path validate" type="text" />
             </div>
           </div>
-          {/*<a className="waves-effect waves-light btn" type="submit" onClick={handleSubmit}>Отправить файл</a>*/}
-          {/*<button type="submit" onClick={handleSubmit}>Submit</button>*/}
         </form>
       </div>
     </div>

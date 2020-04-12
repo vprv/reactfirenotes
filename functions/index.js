@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 const db = admin.firestore();
+const storage = admin.storage();
 
 exports.getUser = functions.https.onCall(async (data, context) => {
   if (!context.auth) return {status: 'error', code: 401, message: 'Not signed in'};
@@ -10,7 +11,7 @@ exports.getUser = functions.https.onCall(async (data, context) => {
   return new Promise((resolve, reject) => {
     db.collection("users").where("email", "==", email).get()
       .then(snapshot => {
-        if(snapshot.empty) return resolve(null);
+        if (snapshot.empty) return resolve(null);
 
         return resolve({user: snapshot.docs[0].data()});
       })
@@ -39,7 +40,7 @@ exports.addNote = functions.https.onCall(async (data, context) => {
     author: context.auth.token.email,
     text: data,
     createdAt: admin.firestore.FieldValue.serverTimestamp()
-  }).catch(function(error) {
+  }).catch(function (error) {
     console.error('Error writing new note to Firebase Database', error);
   });
 });
@@ -51,8 +52,7 @@ exports.getNotes = functions.https.onCall((data, context) => {
   return new Promise((resolve, reject) => {
     db.collection("notes").where("author", "==", email).get()
       .then(snapshot => {
-        if(snapshot.empty) return resolve(null);
-
+        if (snapshot.empty) return resolve(null);
 
         const notes = [];
         snapshot.forEach(doc => {
@@ -79,7 +79,6 @@ exports.userCreate = functions.auth.user().onCreate(async (user) => {
 
 exports.sendFile = functions.https.onCall((data, context) => {
   if (!context.auth) return {status: 'error', code: 401, message: 'Not signed in'};
-  const file = data;
 
   return data;
 });
