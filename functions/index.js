@@ -2,7 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
 const db = admin.firestore();
-const storage = admin.storage();
+
 
 exports.getUser = functions.https.onCall(async (data, context) => {
   if (!context.auth) return {status: 'error', code: 401, message: 'Not signed in'};
@@ -76,9 +76,35 @@ exports.userCreate = functions.auth.user().onCreate(async (user) => {
   });
 });
 
-
-exports.sendFile = functions.https.onCall((data, context) => {
+exports.sendFile = functions.https.onCall(async (data, context) => {
   if (!context.auth) return {status: 'error', code: 401, message: 'Not signed in'};
 
-  return data;
+  const {path, url} = data;
+  await admin.firestore().collection('files').add({
+    author: context.auth.token.email,
+    path: path,
+    url: url,
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+});
+
+exports.getFiles = functions.https.onCall((data, context) => {
+  if (!context.auth) return {status: 'error', code: 401, message: 'Not signed in'};
+
+  const email = context.auth.token.email;
+  return new Promise((resolve, reject) => {
+    db.collection("files").where("author", "==", email).get()
+      .then(snapshot => {
+        if (snapshot.empty) return resolve(null);
+
+        const files = [];
+        snapshot.forEach(doc => {
+          const {url, path} = doc.data();
+          const name = path.split('/')[2].split("_")[1];
+          files.push({url, name});
+        });
+        return resolve(files)
+      })
+      .catch(error => reject(error))
+  });
 });

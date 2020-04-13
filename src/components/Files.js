@@ -1,10 +1,19 @@
 import React from 'react';
 
-const Files = () => {
+const Files = ({data}) => {
+  if (data)
+    return (
+      <div className={'collection'}>
+        {
+          data.map((file, index) => {
+            return <a href={file.url} className="collection-item">{file.name}</a>
+          })
+        }
+      </div>
+    );
+
   return (
-    <div>
-      <span>Файлы</span>
-    </div>
+    <span>Файлов нет</span>
   )
 };
 

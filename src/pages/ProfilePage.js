@@ -1,8 +1,10 @@
-import React, {useEffect, useState, useCallback} from "react";
+import React, {useEffect, useState, useCallback, useContext} from "react";
 
 import Notes from "../components/Notes";
 import Files from "../components/Files";
-import {auth, functions} from "../firebase";
+import {auth, functions, storage} from "../firebase";
+import {UserContext} from "../providers/UserProvider";
+const storageRef = storage.ref();
 
 const placeholderImg = 'https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcTgT9kbszqM7fbnqU1Mh_klw_4tGznX9KrExN9A_EaOrIVnYBv0&usqp=CAU';
 
@@ -16,7 +18,9 @@ const ProfilePage = () => {
   const [form, setForm] = useState({});
   const [note, setNote] = useState('');
   const [notes, setNotes] = useState([]);
+  const [files, setFiles] = useState([]);
 
+  const userAuth = useContext(UserContext);
 
   const changeHandler = event => {
     setForm({...form, [event.target.name]: event.target.value});
@@ -26,21 +30,35 @@ const ProfilePage = () => {
     setNote(event.target.value)
   }
 
-  const sendFile = async (data) => {
+  const sendFile = async ({path, url}) => {
     const sendFile = functions.httpsCallable('sendFile');
-    const response = await sendFile(data);
+    const response = await sendFile({path, url});
     console.log(`response from sendFile function ${response}`);
   }
 
-  const fileOnChangeHandler = (event) => {
-    event.preventDefault();
-    let files = event.target.files;
-
-    let reader = new FileReader();
-    reader.readAsDataURL(files[0]);
-    reader.onload = (event) => {
-      sendFile(event.target.result);
+  const uploadFile = async (file = null) => {
+    if(!file) {
+      throw new Error(`File doesn't exist`);
     }
+    const path = `files/${userAuth.uid}/${Date.now()}_${file.name}`;
+    await storageRef.child(path).put(file);
+    return path;
+  }
+  const getFileUrlByPath = async (path = '') => {
+    if(!path) {
+      throw new Error("Invalid file path");
+    }
+    const url = storageRef.child(path).getDownloadURL();
+    return url;
+  }
+
+  const fileOnChangeHandler = async (event) => {
+    event.preventDefault();
+    let file = event.target.files[0];
+
+    const path = await uploadFile(file);
+    const url = await getFileUrlByPath(path);
+    await sendFile({path, url});
   }
 
   const getUser = useCallback( async () => {
@@ -70,6 +88,14 @@ const ProfilePage = () => {
     return notes;
   }, [setNotes]);
 
+  const getFiles = useCallback( async () => {
+    const getFiles = functions.httpsCallable('getFiles');
+    const userData = await getFiles();
+    const files = userData.data;
+    console.log('files', files);
+    return files;
+  }, [setFiles]);
+
   useEffect(() => {
     getUser().then(user => {
       setUser({...user, user});
@@ -78,8 +104,14 @@ const ProfilePage = () => {
 
     getNotes().then((notes) => {
       setNotes(notes);
-    })
-  }, [getUser, getNotes]);
+    });
+
+    getFiles().then((files) => {
+      setFiles(files);
+      console.log('files', files)
+    });
+
+  }, [getUser, getNotes, getFiles]);
 
   return (
     <div>
@@ -109,7 +141,7 @@ const ProfilePage = () => {
       <div>
         <div>
           <h3>Файлы</h3>
-          <Files/>
+          <Files data={files}/>
         </div>
         <div>
           <h3>Заметки</h3>

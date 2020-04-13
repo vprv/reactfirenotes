@@ -1,12 +1,19 @@
 import React from 'react';
 
 const Notes = ({data}) => {
+  if (data)
+    return (
+      <ul className={"collection"}>
+        {
+          data.map((note, index) => {
+            return <li className={"collection-item"} key={index}>{note}</li>
+          })
+        }
+      </ul>
+    )
+
   return (
-    <div>
-      {data.map((note, index) => {
-        return <h5 key={index}>{note}</h5>
-      })}
-    </div>
+    <span>Нет ниодной заметки</span>
   )
 }
 
